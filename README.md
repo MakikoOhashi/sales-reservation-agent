@@ -57,6 +57,123 @@ cd <repo-name>
 npm install
 npm run dev
 ```
+
+## API Endpoints
+
+### Chat Interface
+- **URL**: `/chat`
+- **Method**: GET
+- **Description**: Simple chat UI for user interaction
+
+### Register Data
+- **URL**: `/api/register`
+- **Method**: POST
+- **Content-Type**: `application/json`
+- **Description**: Receives JSON data and stores it in Google Sheets
+- **Request Body Example**:
+  ```json
+  {
+    "name": "Customer Name",
+    "email": "customer@example.com",
+    "message": "Sales reservation request",
+    "quantity": 100,
+    "product": "Product A"
+  }
+  ```
+- **Response Example (Success)**:
+  ```json
+  {
+    "success": true,
+    "message": "Data received and stored successfully",
+    "data": {
+      "name": "Customer Name",
+      "email": "customer@example.com",
+      "message": "Sales reservation request",
+      "quantity": 100,
+      "product": "Product A"
+    }
+  }
+  ```
+- **Response Example (Error)**:
+  ```json
+  {
+    "success": false,
+    "message": "Failed to write to Google Sheets",
+    "error": "Authentication error",
+    "data": {
+      "name": "Customer Name",
+      "email": "customer@example.com",
+      "message": "Sales reservation request",
+      "quantity": 100,
+      "product": "Product A"
+    }
+  }
+  ```
+
+## Google Sheets Integration
+
+The application integrates with Google Sheets for data storage. To enable this functionality:
+
+1. **Set up Google Cloud Project**:
+   - Create a project in Google Cloud Console
+   - Enable Google Sheets API
+   - Create service account credentials
+
+2. **Environment Variables**:
+   ```bash
+   GOOGLE_SHEETS_ID=your-spreadsheet-id
+   GOOGLE_SHEETS_NAME=Sheet1
+   GOOGLE_CLIENT_EMAIL=your-service-account-email
+   GOOGLE_PRIVATE_KEY="your-private-key"
+   GOOGLE_CLIENT_ID=your-client-id
+   GOOGLE_CLIENT_SECRET=your-client-secret
+   GOOGLE_REDIRECT_URI=your-redirect-uri
+   GOOGLE_ACCESS_TOKEN=your-access-token
+   GOOGLE_REFRESH_TOKEN=your-refresh-token
+   ```
+
+3. **Spreadsheet Setup**:
+   - Create a Google Sheet
+   - Share it with your service account email
+   - Note the spreadsheet ID from the URL
+
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── chat/
+│   │   └── page.tsx          # Chat UI
+│   ├── api/
+│   │   └── register/
+│   │       └── route.ts      # API endpoint
+│   └── ... (existing files)
+└── lib/
+    └── utils/
+        └── googleSheets.ts   # Google Sheets integration
+```
+
+## Testing
+
+To test the implementation:
+
+1. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+2. Access the chat interface:
+   ```
+   http://localhost:3000/chat
+   ```
+
+3. Test the API endpoint:
+   ```bash
+   curl -X POST -H "Content-Type: application/json" \
+   -d '{"name":"Test User","email":"test@example.com","message":"Test message"}' \
+   http://localhost:3000/api/register
+   ```
+
 ---
 ## **Deployment**
 

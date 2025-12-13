@@ -1,50 +1,81 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+
+interface Message {
+  sender: 'User' | 'AI';
+  text: string;
+}
 
 export default function ChatPage() {
   const [inputValue, setInputValue] = useState('');
-  const [responseMessage, setResponseMessage] = useState('');
+  const [chatHistory, setChatHistory] = useState<Message[]>([
+    { sender: 'AI', text: 'Hello! How can I help you today?' },
+    { sender: 'User', text: 'I need help with a sales reservation.' }
+  ]);
   const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const handleSend = async () => {
     if (!inputValue.trim()) return;
 
+    const userMessage = inputValue.trim();
     setIsLoading(true);
-    setResponseMessage('');
+
+    // Add user message to chat history immediately
+    setChatHistory(prev => [...prev, { sender: 'User', text: userMessage }]);
+    setInputValue('');
 
     try {
-      // Create JSON payload with fixed sample values
-      const payload = {
-        category: "Electronics",
-        product: "Laptop",
-        quantity: 1,
-        date: new Date().toISOString(),
-        notes: inputValue
-      };
-
-      // POST to API
-      const response = await fetch('/api/register', {
+      // Send user input to Gemini API
+      const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          message: userMessage,
+          history: chatHistory.map(msg => ({ sender: msg.sender, text: msg.text }))
+        }),
       });
 
       const result = await response.json();
 
-      if (result.success) {
-        setResponseMessage('Data received and stored successfully');
-      } else {
-        setResponseMessage(result.message || 'Error processing request');
+      let aiResponse = 'Sorry, I encountered an error processing your request.';
+
+      if (result.success && result.data) {
+        // If Gemini returned JSON data, send it to register API
+        const registerResponse = await fetch('/api/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(result.data),
+        });
+
+        const registerResult = await registerResponse.json();
+
+        if (registerResult.success) {
+          aiResponse = 'Data added successfully';
+        } else {
+          aiResponse = registerResult.message || 'Failed to add data';
+        }
+      } else if (result.success && result.message) {
+        // Use regular message response from Gemini
+        aiResponse = result.message;
+      } else if (result.message) {
+        aiResponse = result.message;
       }
+
+      // Add AI response to chat history
+      setChatHistory(prev => [...prev, { sender: 'AI', text: aiResponse }]);
+
     } catch (error) {
-      setResponseMessage('Failed to send message');
       console.error('Error:', error);
+      // Add error message to chat history
+      setChatHistory(prev => [...prev, { sender: 'AI', text: 'Failed to send message' }]);
     } finally {
       setIsLoading(false);
-      setInputValue('');
     }
   };
 
@@ -54,32 +85,34 @@ export default function ChatPage() {
     }
   };
 
+  // Auto-scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatHistory]);
+
   return (
     <div className="min-h-screen bg-zinc-50 dark:bg-black">
       <main className="max-w-2xl mx-auto p-6">
         <h1 className="text-2xl font-semibold mb-6 text-black dark:text-white">Chat</h1>
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6 h-96 overflow-y-auto">
           <div className="space-y-4">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">AI</div>
-              <div className="flex-1">
-                <p className="text-gray-800 dark:text-gray-200">Hello! How can I help you today?</p>
-              </div>
-            </div>
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center text-gray-700 text-sm font-medium">U</div>
-              <div className="flex-1">
-                <p className="text-gray-800 dark:text-gray-200">I need help with a sales reservation.</p>
-              </div>
-            </div>
-            {responseMessage && (
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-sm font-medium">AI</div>
+            {chatHistory.map((message, index) => (
+              <div key={index} className="flex items-start gap-3">
+                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${message.sender === 'AI' ? 'bg-blue-500' : 'bg-gray-500'}`}>
+                  {message.sender === 'AI' ? 'AI' : 'U'}
+                </div>
                 <div className="flex-1">
-                  <p className="text-gray-800 dark:text-gray-200">{responseMessage}</p>
+                  {message.sender === 'AI' ? (
+                    <pre className="text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">
+                      {message.text}
+                    </pre>
+                  ) : (
+                    <p className="text-gray-800 dark:text-gray-200">{message.text}</p>
+                  )}
                 </div>
               </div>
-            )}
+            ))}
+            <div ref={messagesEndRef} />
           </div>
         </div>
         <div className="flex gap-2">

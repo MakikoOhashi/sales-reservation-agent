@@ -19,15 +19,10 @@ export class GoogleSheetsService {
   }
 
   private async getAuthClient() {
-    const auth = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.GOOGLE_REDIRECT_URI
-    );
-
-    auth.setCredentials({
-      access_token: process.env.GOOGLE_ACCESS_TOKEN,
-      refresh_token: process.env.GOOGLE_REFRESH_TOKEN
+    const auth = new google.auth.JWT({
+      email: this.config.credentials.client_email,
+      key: this.config.credentials.private_key,
+      scopes: ['https://www.googleapis.com/auth/spreadsheets']
     });
 
     return auth;

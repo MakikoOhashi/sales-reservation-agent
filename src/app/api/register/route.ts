@@ -1,18 +1,35 @@
 import { NextResponse } from 'next/server';
 import { GoogleSheetsService } from '@/lib/utils/googleSheets';
+import { readFileSync } from 'fs';
+import { resolve } from 'path';
 
 export async function POST(request: Request) {
   try {
     const data = await request.json();
     console.log('Received data:', data);
 
-    // Initialize Google Sheets service (would need proper config in production)
+    // Validate required fields
+    const requiredFields = ['category', 'product', 'quantity', 'date', 'notes'];
+    for (const field of requiredFields) {
+      if (!(field in data)) {
+        return NextResponse.json({
+          success: false,
+          message: `Missing required field: ${field}`
+        }, { status: 400 });
+      }
+    }
+
+    // Load credentials from file
+    const credentialsPath = resolve(process.cwd(), 'credentials.json');
+    const credentials = JSON.parse(readFileSync(credentialsPath, 'utf-8'));
+
+    // Initialize Google Sheets service with specific config
     const sheetsService = new GoogleSheetsService({
-      spreadsheetId: process.env.GOOGLE_SHEETS_ID || '',
-      sheetName: process.env.GOOGLE_SHEETS_NAME || 'Sheet1',
+      spreadsheetId: '10mvc3GHoMSfJM0ch9ASSlCfowJClyfh4ZZh6k5vYG7A',
+      sheetName: 'RawData',
       credentials: {
-        client_email: process.env.GOOGLE_CLIENT_EMAIL || '',
-        private_key: process.env.GOOGLE_PRIVATE_KEY || ''
+        client_email: credentials.client_email,
+        private_key: credentials.private_key
       }
     });
 

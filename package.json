@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "googleapis": "^168.0.0",
+    "luxon": "^3.7.2",
     "next": "^16.0.10",
     "react": "^19.2.1",
     "react-dom": "^19.2.1"

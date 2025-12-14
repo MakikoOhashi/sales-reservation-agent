@@ -12,15 +12,22 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Process the user input using our reservation processor
+    // Process the user input using our reservation processor with normalization
     const processingResult = await processReservationInput(message);
 
     // Check if we have missing fields
     if ('missingFields' in processingResult) {
+      // Generate a precise message for the LLM about which fields are missing
+      const missingFieldsList = processingResult.missingFields.join(', ');
+      const userPrompt = `Please provide the following missing information: ${missingFieldsList}. ` +
+                       `Do not ask for fields already provided. Current data: ${JSON.stringify(processingResult.normalizedData)}`;
+
       return NextResponse.json({
         success: false,
-        message: processingResult.message,
-        missingFields: processingResult.missingFields
+        message: userPrompt,
+        missingFields: processingResult.missingFields,
+        normalizedData: processingResult.normalizedData,
+        instruction: 'Ask only for the missing fields listed above. Do not ask for fields already present.'
       }, { status: 400 });
     }
 

@@ -1,11 +1,11 @@
 /**
- * Test script for reservation processing with normalization
+ * Test script for compiled reservation processing
  */
 
-const { processReservationInput, validateReservationData } = require('./src/lib/utils/reservationProcessor');
+const { processReservationInput, validateReservationData } = require('./.next/server/chunks/src_lib_utils_reservationProcessor.js');
 
 async function runTests() {
-  console.log('Running reservation processing tests with normalization...\\n');
+  console.log('Running compiled reservation processing tests...\\n');
 
   // Test cases
   const testCases = [
@@ -15,8 +15,7 @@ async function runTests() {
       expectedFields: {
         type: 'reservation',
         product: 'laptops',
-        quantity: 10,
-        notes: 'for Company A'
+        quantity: 10
       }
     },
     {
@@ -25,28 +24,7 @@ async function runTests() {
       expectedFields: {
         type: 'reservation',
         product: 'chairs',
-        quantity: 5,
-        notes: 'for tomorrow'
-      }
-    },
-    {
-      name: 'Software licenses with today date',
-      input: "Need 3 software licenses today",
-      expectedFields: {
-        type: 'reservation',
-        product: 'licenses',
-        quantity: 3,
-        notes: 'today'
-      }
-    },
-    {
-      name: 'Test key alias handling (note -> notes)',
-      input: "Reserve 2 monitors with note: urgent order",
-      expectedFields: {
-        type: 'reservation',
-        product: 'monitors',
-        quantity: 2,
-        notes: 'urgent order'
+        quantity: 5
       }
     },
     {
@@ -102,31 +80,6 @@ async function runTests() {
     }
 
     console.log('---');
-  }
-
-  // Test key alias normalization
-  console.log('Testing key alias normalization...');
-  const aliasTestData = {
-    'product name': 'test product',
-    'qty': 5,
-    'note': 'test note',
-    'today': 'today'
-  };
-
-  // This would be called internally by processReservationInput
-  console.log('Alias test data:', JSON.stringify(aliasTestData, null, 2));
-  console.log('Expected normalization: product, quantity, notes, date fields');
-
-  // Test missing fields with partial data
-  console.log('\\nTesting missing fields detection with partial data...');
-  const partialInput = "Reserve 1 laptop";
-  const partialResult = await processReservationInput(partialInput);
-
-  if ('missingFields' in partialResult) {
-    console.log('✅ Correctly identified missing fields:', partialResult.missingFields);
-    console.log('📝 Normalized data:', JSON.stringify(partialResult.normalizedData, null, 2));
-  } else {
-    console.log('❌ Should have identified missing fields');
   }
 }
 

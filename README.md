@@ -191,6 +191,11 @@ Role-based approval flow
 
 Advanced inventory optimization logic
 
+Add auto-incrementing reservation IDs for each sales entry
+
+Enable sequential tracking for easier reference and reporting
+
+
 ---
 ## **Hackathon Notes**
 

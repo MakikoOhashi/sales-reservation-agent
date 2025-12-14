@@ -12,32 +12,37 @@ import { DateTime } from 'luxon';
 export function parseNaturalLanguageDate(dateString: string): string {
   try {
     // Try to parse with Luxon first
-    const parsedDate = DateTime.fromFormat(dateString, {
-      // Try multiple formats
-      formats: [
-        'yyyy-MM-dd',           // 2025-12-20
-        'MMMM d, yyyy',         // December 20, 2025
-        'MMMM dd, yyyy',        // December 20, 2025
-        'MMM d, yyyy',          // Dec 20, 2025
-        'MMM dd, yyyy',         // Dec 20, 2025
-        'MM/dd/yyyy',           // 12/20/2025
-        'MM-dd-yyyy',           // 12-20-2025
-        'd MMMM yyyy',          // 20 December 2025
-        'dd MMMM yyyy',         // 20 December 2025
-        'd MMM yyyy',           // 20 Dec 2025
-        'dd MMM yyyy',          // 20 Dec 2025
-      ],
-      setZone: true
-    });
+    let parsedDate: DateTime | null = null;
+    const formats = [
+      'yyyy-MM-dd',           // 2025-12-20
+      'MMMM d, yyyy',         // December 20, 2025
+      'MMMM dd, yyyy',        // December 20, 2025
+      'MMM d, yyyy',          // Dec 20, 2025
+      'MMM dd, yyyy',         // Dec 20, 2025
+      'MM/dd/yyyy',           // 12/20/2025
+      'MM-dd-yyyy',           // 12-20-2025
+      'd MMMM yyyy',          // 20 December 2025
+      'dd MMMM yyyy',         // 20 December 2025
+      'd MMM yyyy',           // 20 Dec 2025
+      'dd MMM yyyy',          // 20 Dec 2025
+    ];
 
-    if (parsedDate.isValid) {
-      return parsedDate.toISO();
+    for (const format of formats) {
+      const tempDate = DateTime.fromFormat(dateString, format);
+      if (tempDate.isValid) {
+        parsedDate = tempDate;
+        break;
+      }
+    }
+
+    if (parsedDate && parsedDate.isValid) {
+      return parsedDate.toISO() as string;
     }
 
     // Try relative dates (next Friday, tomorrow, etc.)
     const relativeDate = parseRelativeDate(dateString);
     if (relativeDate) {
-      return relativeDate.toISO();
+      return relativeDate.toISO() as string;
     }
 
     // Try to parse as general date string

@@ -27,7 +27,22 @@ export default function ChatPage() {
     setInputValue('');
 
     try {
-      // Send user input to Gemini API
+      // Extract currentData from the last AI message if it exists
+      let currentData = {};
+      const lastAIMessages = chatHistory.filter(msg => msg.sender === 'AI').reverse();
+      for (const aiMessage of lastAIMessages) {
+        try {
+          const parsedMessage = JSON.parse(aiMessage.text);
+          if (parsedMessage.currentData) {
+            currentData = parsedMessage.currentData;
+            break;
+          }
+        } catch (e) {
+          // Not JSON, continue
+        }
+      }
+
+      // Send user input to Gemini API with currentData for state persistence
       const response = await fetch('/api/gemini', {
         method: 'POST',
         headers: {
@@ -35,7 +50,8 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           message: userMessage,
-          history: chatHistory.map(msg => ({ sender: msg.sender, text: msg.text }))
+          history: chatHistory.map(msg => ({ sender: msg.sender, text: msg.text })),
+          currentData: currentData
         }),
       });
 

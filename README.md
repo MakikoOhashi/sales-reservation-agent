@@ -195,6 +195,11 @@ Add auto-incrementing reservation IDs for each sales entry
 
 Enable sequential tracking for easier reference and reporting
 
+Handle missing fields by prompting follow-up questions (e.g., reservation date)
+
+Support configurable default values for incomplete reservations
+
+
 
 ---
 ## **Hackathon Notes**

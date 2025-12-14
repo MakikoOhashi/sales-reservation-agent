@@ -8,6 +8,11 @@ export async function POST(request: Request) {
     const data = await request.json();
     console.log('Received data:', data);
 
+    // Default type to "SalesReservation" if not provided
+    if (!('type' in data)) {
+      data.type = 'SalesReservation';
+    }
+
     // Validate required fields
     const requiredFields = ['type', 'category', 'product', 'quantity', 'date', 'notes'];
     for (const field of requiredFields) {

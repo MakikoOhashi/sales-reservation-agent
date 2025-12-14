@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     console.log('Received data:', data);
 
     // Validate required fields
-    const requiredFields = ['category', 'product', 'quantity', 'date', 'notes'];
+    const requiredFields = ['type', 'category', 'product', 'quantity', 'date', 'notes'];
     for (const field of requiredFields) {
       if (!(field in data)) {
         return NextResponse.json({
@@ -17,6 +17,15 @@ export async function POST(request: Request) {
           message: `Missing required field: ${field}`
         }, { status: 400 });
       }
+    }
+
+    // Validate type field
+    const validTypes = ['SalesReservation', 'PurchaseOrder'];
+    if (!validTypes.includes(data.type)) {
+      return NextResponse.json({
+        success: false,
+        message: `Invalid type. Must be one of: ${validTypes.join(', ')}`
+      }, { status: 400 });
     }
 
     // Load credentials from file

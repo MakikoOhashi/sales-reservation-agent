@@ -32,12 +32,20 @@ export class GoogleSheetsService {
     try {
       const auth = await this.getAuthClient();
 
-      // Convert data object to array format for Google Sheets
-      const values = Object.values(data);
+      // Convert data object to array format for Google Sheets with explicit column order
+      // Column order: type, category, product, quantity, date, notes
+      const values = [
+        data.type,
+        data.category,
+        data.product,
+        data.quantity,
+        data.date,
+        data.notes
+      ];
 
       const response = await this.sheets.spreadsheets.values.append({
         spreadsheetId: this.config.spreadsheetId,
-        range: `${this.config.sheetName}!A:Z`,
+        range: `${this.config.sheetName}!A:F`,
         valueInputOption: 'RAW',
         insertDataOption: 'INSERT_ROWS',
         requestBody: {

@@ -18,9 +18,48 @@ export async function POST(request: Request) {
     // Check if we have missing fields
     if ('missingFields' in processingResult) {
       // Generate a precise message for the LLM about which fields are missing
-      const missingFieldsList = processingResult.missingFields.join(', ');
-      const userPrompt = `Please provide the following missing information: ${missingFieldsList}. ` +
-                       `Do not ask for fields already provided. Current data: ${JSON.stringify(processingResult.normalizedData)}`;
+      const currentData = processingResult.normalizedData;
+      const missingFields = processingResult.missingFields;
+
+      // NEW PROMPT LOGIC
+      let userPrompt = '';
+
+      if (missingFields.length === 0) {
+        userPrompt = "All required information has been collected.";
+      } else {
+        // Generate ONE concise, natural-language question asking only for missing fields
+        if (missingFields.length === 1) {
+          const field = missingFields[0];
+          if (field === 'type') {
+            userPrompt = "What type of reservation is this?";
+          } else if (field === 'category') {
+            userPrompt = "What category do these items belong to?";
+          } else if (field === 'product') {
+            userPrompt = "What product are you reserving?";
+          } else if (field === 'quantity') {
+            userPrompt = "How many items do you need?";
+          } else if (field === 'date') {
+            userPrompt = "When do you need this reservation?";
+          } else if (field === 'notes') {
+            userPrompt = "Any additional notes or details?";
+          } else {
+            userPrompt = `What is the ${field}?`;
+          }
+        } else {
+          // For multiple missing fields, create a combined question
+          const fieldQuestions = missingFields.map(field => {
+            if (field === 'type') return "reservation type";
+            if (field === 'category') return "item category";
+            if (field === 'product') return "product name";
+            if (field === 'quantity') return "quantity needed";
+            if (field === 'date') return "reservation date";
+            if (field === 'notes') return "additional notes";
+            return field;
+          });
+
+          userPrompt = `Please provide the ${fieldQuestions.join(', ')}.`;
+        }
+      }
 
       return NextResponse.json({
         success: false,

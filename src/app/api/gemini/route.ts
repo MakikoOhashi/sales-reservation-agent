@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
-import { validateReservationData } from '@/lib/utils/reservationProcessor';
+import { validateReservationData, processReservationInput } from '@/lib/utils/reservationProcessor';
+import { DateTime } from 'luxon';
+import { isValidISODate } from '@/lib/utils/dateParser';
 
 // Define the normalized reservation data structure
 interface NormalizedReservationData {
@@ -98,8 +100,11 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
+    // Process date field to ensure ISO 8601 format before validation
+    const processedState = await processDateField(conversationState);
+
     // Validate the processed data
-    if (!validateReservationData(conversationState)) {
+    if (!validateReservationData(processedState)) {
       return NextResponse.json({
         success: false,
         message: 'Invalid reservation data format'
@@ -109,7 +114,7 @@ export async function POST(request: Request) {
     // Return the structured JSON data ready for Google Sheets
     return NextResponse.json({
       success: true,
-      data: conversationState,
+      data: processedState,
       message: 'Reservation data processed successfully'
     });
 
@@ -230,4 +235,35 @@ function computeMissingFields(data: NormalizedReservationData): string[] {
   }
 
   return missingFields;
+}
+
+/**
+ * Process date field to ensure ISO 8601 format
+ */
+async function processDateField(data: NormalizedReservationData): Promise<NormalizedReservationData> {
+  if (!data.date) {
+    data.date = DateTime.now().toISO();
+  }
+
+  // Handle special date values
+  const lowerDate = String(data.date).toLowerCase().trim();
+  if (lowerDate === 'today') {
+    data.date = DateTime.now().toISO();
+  } else if (lowerDate === 'tomorrow') {
+    data.date = DateTime.now().plus({ days: 1 }).toISO();
+  } else if (lowerDate === 'yesterday') {
+    data.date = DateTime.now().minus({ days: 1 }).toISO();
+  }
+  // If date is already in ISO format, keep it as is
+  else if (isValidISODate(data.date)) {
+    // Date is already valid
+  }
+  // Convert natural language date to ISO format
+  else {
+    // Import parseNaturalLanguageDate from dateParser
+    const { parseNaturalLanguageDate } = await import('@/lib/utils/dateParser');
+    data.date = parseNaturalLanguageDate(data.date);
+  }
+
+  return data;
 }

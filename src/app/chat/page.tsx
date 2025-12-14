@@ -58,6 +58,7 @@ export default function ChatPage() {
       const result = await response.json();
 
       let aiResponse = 'Sorry, I encountered an error processing your request.';
+      let responseData = null;
 
       if (result.success && result.data) {
         // If Gemini returned JSON data, send it to register API
@@ -81,10 +82,24 @@ export default function ChatPage() {
         aiResponse = result.message;
       } else if (result.message) {
         aiResponse = result.message;
+        // Store the full response data including currentData for state persistence
+        responseData = result;
       }
 
       // Add AI response to chat history
-      setChatHistory(prev => [...prev, { sender: 'AI', text: aiResponse }]);
+      // If we have response data with currentData, store it as JSON for later parsing
+      if (responseData && responseData.currentData) {
+        setChatHistory(prev => [...prev, {
+          sender: 'AI',
+          text: JSON.stringify({
+            message: aiResponse,
+            currentData: responseData.currentData,
+            missingFields: responseData.missingFields
+          })
+        }]);
+      } else {
+        setChatHistory(prev => [...prev, { sender: 'AI', text: aiResponse }]);
+      }
 
     } catch (error) {
       console.error('Error:', error);
@@ -112,22 +127,29 @@ export default function ChatPage() {
         <h1 className="text-2xl font-semibold mb-6 text-black dark:text-white">Chat</h1>
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6 h-96 overflow-y-auto">
           <div className="space-y-4">
-            {chatHistory.map((message, index) => (
-              <div key={index} className="flex items-start gap-3">
-                <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${message.sender === 'AI' ? 'bg-blue-500' : 'bg-gray-500'}`}>
-                  {message.sender === 'AI' ? 'AI' : 'U'}
-                </div>
-                <div className="flex-1">
-                  {message.sender === 'AI' ? (
-                    <pre className="text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">
-                      {message.text}
-                    </pre>
-                  ) : (
-                    <p className="text-gray-800 dark:text-gray-200">{message.text}</p>
-                  )}
-                </div>
+          {chatHistory.map((message, index) => (
+            <div key={index} className="flex items-start gap-3">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium ${message.sender === 'AI' ? 'bg-blue-500' : 'bg-gray-500'}`}>
+                {message.sender === 'AI' ? 'AI' : 'U'}
               </div>
-            ))}
+              <div className="flex-1">
+                {message.sender === 'AI' ? (
+                  <pre className="text-gray-800 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 p-3 rounded-lg overflow-x-auto whitespace-pre-wrap">
+                    {(() => {
+                      try {
+                        const parsed = JSON.parse(message.text);
+                        return parsed.message || message.text;
+                      } catch (e) {
+                        return message.text;
+                      }
+                    })()}
+                  </pre>
+                ) : (
+                  <p className="text-gray-800 dark:text-gray-200">{message.text}</p>
+                )}
+              </div>
+            </div>
+          ))}
             <div ref={messagesEndRef} />
           </div>
         </div>

@@ -187,16 +187,66 @@ function extractFieldsFromMessage(message: string): Partial<NormalizedReservatio
     }
   }
 
-  // Extract notes (everything after "for" but before date)
-  const forMatch = message.match(/for\s+([^.]+?)(?:\s+on\s+|\s+for\s+|$)/i);
-  if (forMatch) {
-    result.notes = forMatch[1].trim();
-  } else {
-    // Extract company/client names or additional context
-    const companyMatch = message.match(/for\s+([a-z]+\s*(?:inc|llc|corp|company|co)\.?)/i);
-    if (companyMatch) {
-      result.notes = companyMatch[1].trim();
+  // Extract notes - comprehensive approach
+  // 1. Look for explicit note indicators
+  const notePatterns = [
+    /note[:s]*([^.!]+)/i,
+    /notes[:s]*([^.!]+)/i,
+    /priority[:s]*([^.!]+)/i,
+    /urgent[:s]*([^.!]+)/i,
+    /important[:s]*([^.!]+)/i,
+    /special[:s]*([^.!]+)/i,
+    /additional[:s]*([^.!]+)/i,
+    /details[:s]*([^.!]+)/i,
+    /requirement[:s]*([^.!]+)/i,
+    /shipment[:s]*([^.!]+)/i,
+    /delivery[:s]*([^.!]+)/i,
+    /for[:s]*([^.!]+)/i
+  ];
+
+  for (const pattern of notePatterns) {
+    const noteMatch = message.match(pattern);
+    if (noteMatch && noteMatch[1]) {
+      result.notes = noteMatch[1].trim();
+      break;
     }
+  }
+
+  // 2. If no specific pattern found, use general approach
+  if (!result.notes) {
+    // Look for text after main fields but before date
+    const generalMatch = message.match(/(?:laptops|chairs|software|hardware|licenses|monitors|desks)\s+([^.!]+)(?:\s+on\s+|\s+for\s+|$)/i);
+    if (generalMatch && generalMatch[1]) {
+      result.notes = generalMatch[1].trim();
+    } else {
+      // Fallback: use entire message as notes if it contains relevant keywords
+      const noteKeywords = ['priority', 'urgent', 'important', 'special', 'shipment', 'delivery', 'express', 'rush', 'asap'];
+      for (const keyword of noteKeywords) {
+        if (lowerMessage.includes(keyword)) {
+          // Extract the relevant part containing the keyword
+          const keywordIndex = lowerMessage.indexOf(keyword);
+          const sentenceMatch = message.slice(keywordIndex).match(/[^.!]+[.!?]/);
+          if (sentenceMatch) {
+            result.notes = sentenceMatch[0].trim();
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  // 3. Clean up notes by removing any extracted field values
+  if (result.notes) {
+    // Remove product names if they appear in notes
+    const productKeywords = ['laptop', 'chair', 'license', 'desk', 'monitor', 'software', 'hardware'];
+    let cleanedNotes = result.notes;
+    for (const product of productKeywords) {
+      cleanedNotes = cleanedNotes.replace(new RegExp(`\\b${product}\\b`, 'gi'), '');
+    }
+    // Remove quantity numbers
+    cleanedNotes = cleanedNotes.replace(/\d+/g, '');
+    // Clean up extra spaces
+    result.notes = cleanedNotes.replace(/\s+/g, ' ').trim();
   }
 
   return result;
